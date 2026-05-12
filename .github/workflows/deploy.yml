@@ -1,0 +1,33 @@
+name: Deploy para Droplet
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy via SSH
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar arquivos para o Droplet
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host:     ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key:      ${{ secrets.DROPLET_SSH_KEY }}
+          source:   "index.html"
+          target:   "/var/www/ericsantos.eu"
+          overwrite: true
+
+      - name: Confirmar deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key:      ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            echo "✅ Site atualizado em $(date)"

@@ -1,0 +1,104 @@
+# ---- ericsantos.eu (site raiz) ----
+server {
+    server_name ericsantos.eu www.ericsantos.eu;
+    root /var/www/ericsantos.eu;
+    index index.html;
+    location / { try_files $uri $uri/ /index.html; }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/ericsantos.eu/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/ericsantos.eu/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+
+# ---- icarros.ericsantos.eu ----
+server {
+    server_name icarros.ericsantos.eu;
+
+    # Frontend (Vue build servido pelo container nginx interno)
+    location / {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+    }
+
+    # API Go
+    location /api/ {
+        rewrite ^/api/(.*)$ /$1 break;
+        proxy_pass         http://127.0.0.1:8080;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+    }
+
+    # WebSocket
+    location /ws/ {
+        proxy_pass         http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection "upgrade";
+        proxy_read_timeout 3600s;
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/ericsantos.eu/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/ericsantos.eu/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+
+# ---- poker.ericsantos.eu ----
+server {
+    listen 443 ssl;
+    server_name poker.ericsantos.eu;
+
+    # Forward all traffic to the frontend container (port must match docker-compose.yml).
+    location / {
+        proxy_pass         http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+
+        # Required for WebSocket (wss://) to work through nginx.
+        proxy_set_header   Upgrade    $http_upgrade;
+        proxy_set_header   Connection "upgrade";
+
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+
+        proxy_read_timeout 3600s;
+    }
+
+    ssl_certificate /etc/letsencrypt/live/poker.ericsantos.eu/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/poker.ericsantos.eu/privkey.pem; # managed by Certbot
+}
+
+
+server {
+    if ($host = www.ericsantos.eu) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    if ($host = ericsantos.eu) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    listen 80;
+    server_name ericsantos.eu www.ericsantos.eu;
+    return 404; # managed by Certbot
+}
+
+
+server {
+    if ($host = icarros.ericsantos.eu) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    server_name icarros.ericsantos.eu;
+    return 404; # managed by Certbot
+}
