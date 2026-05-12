@@ -20,7 +20,7 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           key:      ${{ secrets.DROPLET_SSH_KEY }}
           source:   "index.html,index.en.html"
-          target:   "/opt/ericsantos.eu"
+          target:   "/var/www/ericsantos.eu"
           overwrite: true
 
       - name: Confirmar deploy
