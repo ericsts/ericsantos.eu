@@ -19,7 +19,7 @@ jobs:
           host:     ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           key:      ${{ secrets.DROPLET_SSH_KEY }}
-          source:   "index.html"
+          source:   "index.html,index.en.html"
           target:   "/var/www/ericsantos.eu"
           overwrite: true
 
