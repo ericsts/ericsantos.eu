@@ -193,6 +193,54 @@ Veja o comentário no topo de `../nginx/schedulesyou.com.conf` pra mais
 detalhes; isso fica como próximo passo separado, não bloqueia o resto desta
 migração.
 
+## Acessando de fora — DBeaver (Postgres) e Redis
+
+Postgres e Redis estão publicados só em `127.0.0.1` do droplet (nunca
+expostos à internet, de propósito). Pra acessar da sua máquina, o caminho é
+túnel SSH — não abra porta no firewall pra isso.
+
+### Postgres via DBeaver
+
+O DBeaver cria o túnel SSH sozinho, direto na configuração da conexão:
+
+1. Nova conexão → **PostgreSQL**.
+2. Aba **Main**:
+   - Host: `localhost`
+   - Port: `5432`
+   - Database: `icarros`, `banco` ou `schedulesyou` (ou `postgres`, usando o
+     usuário `postgres`/`POSTGRES_SUPERUSER_PASSWORD`, pra enxergar os três
+     de uma vez)
+   - Username/Password: o role do projeto (`icarros`, `banco` ou
+     `schedulesyou`) e a senha correspondente — ambos estão em `infra/.env`
+     no droplet (`ICARROS_DB_PASSWORD`, `BANCO_DB_PASSWORD`,
+     `SCHEDULESYOU_DB_PASSWORD`).
+3. Aba **SSH**: marque "Use SSH Tunnel" →
+   - Host: IP do droplet, Port `22`, User `deploy`
+   - Authentication: Public Key → aponte pra sua chave privada de acesso ao
+     droplet (a que você usa em `ssh deploy@IP` no dia a dia — **não** a
+     `~/.ssh/github_actions`, essa é só do CI/CD)
+4. Test Connection.
+
+Cada role só enxerga o próprio database (isolamento via `REVOKE ALL ...
+FROM PUBLIC` no init) — conectando como `banco` você só vê `banco`; só o
+`postgres` (superuser) vê todos.
+
+### Redis
+
+O suporte a Redis do DBeaver é limitado. Mais simples: abra o túnel manual
+e use `redis-cli` ou um cliente dedicado (RedisInsight, TablePlus, Medis):
+
+```bash
+ssh -N -L 6379:127.0.0.1:6379 deploy@SEU_IP
+```
+
+Com o túnel aberto, em outro terminal (ou apontando o cliente pra
+`localhost:6379`):
+
+```bash
+redis-cli -h 127.0.0.1 -p 6379 -a "REDIS_PASSWORD_do_infra/.env"
+```
+
 ## Adicionando um projeto novo no futuro
 
 1. Adicione o role+database em `postgres/init/01-roles-and-dbs.sh` (só roda
