@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: infra_postgres
+    restart: unless-stopped
+    # Tuning conservador pra droplet de 1GB de RAM total (não só deste
+    # container) — ajuste se o droplet crescer.
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c effective_cache_size=384MB
+      -c work_mem=4MB
+      -c maintenance_work_mem=32MB
+      -c max_connections=40
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?defina POSTGRES_SUPERUSER_PASSWORD no .env}
+      ICARROS_DB_PASSWORD: ${ICARROS_DB_PASSWORD:?defina ICARROS_DB_PASSWORD no .env}
+      BANCO_DB_PASSWORD: ${BANCO_DB_PASSWORD:?defina BANCO_DB_PASSWORD no .env}
+      SCHEDULESYOU_DB_PASSWORD: ${SCHEDULESYOU_DB_PASSWORD:?defina SCHEDULESYOU_DB_PASSWORD no .env}
+    ports:
+      - "127.0.0.1:5432:5432"   # só localhost — acesso admin via SSH tunnel
+    volumes:
+      - infra_pgdata:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - infra_shared
+
+  redis:
+    image: redis:7-alpine
+    container_name: infra_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:?defina REDIS_PASSWORD no .env}
+      --maxmemory 64mb
+      --maxmemory-policy allkeys-lru
+    ports:
+      - "127.0.0.1:6379:6379"   # só localhost
+    volumes:
+      - infra_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - infra_shared
+
+  rabbitmq:
+    image: rabbitmq:3.13-alpine
+    container_name: infra_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: icarros
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_ICARROS_PASSWORD:?defina RABBITMQ_ICARROS_PASSWORD no .env}
+      RABBITMQ_DEFAULT_VHOST: icarros
+      RABBITMQ_VM_MEMORY_HIGH_WATERMARK_ABSOLUTE: 128MB
+    ports:
+      - "127.0.0.1:5672:5672"   # só localhost — sem management UI (economiza RAM)
+    volumes:
+      - infra_rabbitmqdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    networks:
+      - infra_shared
+
+networks:
+  infra_shared:
+    external: true
+
+volumes:
+  infra_pgdata:
+  infra_redisdata:
+  infra_rabbitmqdata:

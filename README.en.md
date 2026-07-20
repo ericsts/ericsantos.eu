@@ -32,6 +32,8 @@ Developer with extensive experience building digital products from scratch — f
 | [🚗 iCarros](https://icarros.ericsantos.eu) | Real-time car auction platform with WebSockets, JWT auth, RabbitMQ queues, and email notifications | Go · Vue 3 · PostgreSQL · RabbitMQ · Docker |
 | [🃏 Planning Poker](https://poker.ericsantos.eu) | Real-time Scrum planning cards for agile teams | Go · Vue 3 · WebSocket · Docker |
 | [⚓ Battleship](https://battleship.ericsantos.eu) | Real-time multiplayer naval battle game via WebSockets — no frontend frameworks | Go · WebSocket · HTML/CSS/JS · Docker |
+| [💰 Banco](https://banco.ericsantos.eu) | Bank statement (PDF) extraction and organization with an AI financial assistant | Python · FastAPI · Vue 3 · PostgreSQL · Docker |
+| [📅 SchedulesYou](https://schedulesyou.com) | Multi-tenant scheduling SaaS, with a dynamic subdomain per company | Laravel · PostgreSQL · Redis · Docker |
 
 ## Repository structure
 
@@ -39,11 +41,17 @@ Developer with extensive experience building digital products from scratch — f
 ericsantos.eu/
 ├── index.html          # Portuguese site (primary)
 ├── index.en.html       # English site
-├── nginx/              # per-subdomain nginx configs
+├── nginx/              # per-subdomain/domain nginx configs
 │   ├── ericsantos.eu.conf
 │   ├── icarros.ericsantos.eu.conf
 │   ├── poker.ericsantos.eu.conf
-│   └── battleship.ericsantos.eu.conf
+│   ├── battleship.ericsantos.eu.conf
+│   ├── banco.ericsantos.eu.conf
+│   └── schedulesyou.com.conf
+├── infra/               # shared Postgres/Redis/RabbitMQ for every project
+│   │                     on the droplet (see infra/README.md)
+│   ├── docker-compose.yml
+│   └── postgres/init/
 └── .github/
     └── workflows/
         └── deploy.yml  # automatic deploy via GitHub Actions
@@ -51,6 +59,6 @@ ericsantos.eu/
 
 ## Deploy
 
-A push to the `main` branch triggers GitHub Actions, which copies `index.html` (and `index.en.html`) to `/var/www/ericsantos.eu/` on the server via SCP.
+A push to the `main` branch triggers GitHub Actions, which runs `git pull` on the repo checkout at `/opt/ericsantos.eu/` on the server (the same checkout the shared infra stack is deployed from — see `infra/README.md`).
 
 The nginx configs in `nginx/` are applied manually on the server when changed (which is rare).
