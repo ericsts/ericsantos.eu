@@ -241,6 +241,47 @@ Com o túnel aberto, em outro terminal (ou apontando o cliente pra
 redis-cli -h 127.0.0.1 -p 6379 -a "REDIS_PASSWORD_do_infra/.env"
 ```
 
+## Manutenção do host — swap e swappiness pós-upgrade de RAM
+
+O droplet começou em 1GB de RAM, o que forçava o swapfile de 1GB a
+funcionar como extensão de memória primária (não como rede de segurança) —
+resultado: swap sempre ~100% cheio e o `go build` do go-icarros (build feito
+no próprio host) bastava sozinho pra levar o sistema à beira do OOM. Depois
+do upgrade de RAM, os passos abaixo reduzem a dependência de swap sem
+removê-lo.
+
+1. Confirmar RAM/swap atuais:
+   ```bash
+   free -h
+   swapon --show
+   ```
+2. Recriar o swapfile em 2GB (o `/etc/fstab` já aponta pro mesmo caminho
+   `/swapfile`, então não precisa mexer nele):
+   ```bash
+   sudo swapoff /swapfile
+   sudo rm /swapfile
+   sudo fallocate -l 2G /swapfile
+   sudo chmod 600 /swapfile
+   sudo mkswap /swapfile
+   sudo swapon /swapfile
+   free -h   # confirma a nova RAM total + 2.0Gi de swap
+   ```
+3. Baixar o `vm.swappiness` (default costuma ser 60) pra o kernel só
+   recorrer a swap quando a RAM real já estiver de fato apertada, em vez de
+   trocar página cedo demais:
+   ```bash
+   sudo tee /etc/sysctl.d/99-swappiness.conf > /dev/null <<'EOF'
+   vm.swappiness=10
+   EOF
+   sudo sysctl --system
+   cat /proc/sys/vm/swappiness   # confirma 10
+   ```
+4. Validar com o sistema em uso normal (fora de deploy):
+   ```bash
+   free -h
+   ps aux --sort=-%mem | head -15
+   ```
+
 ## Adicionando um projeto novo no futuro
 
 1. Adicione o role+database em `postgres/init/01-roles-and-dbs.sh` (só roda
