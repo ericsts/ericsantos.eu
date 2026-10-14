@@ -22,5 +22,5 @@ jobs:
           overwrite: true
           script: |
             set -e
-            cd /opt/ericsantos.eu
+            cd /var/www/ericsantos.eu
             git pull origin main

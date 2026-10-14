@@ -49,14 +49,14 @@ docker network create infra_shared
 ## 2. Atualizar o checkout do ericsantos.eu
 
 ```bash
-cd /opt/ericsantos.eu
+cd /var/www/ericsantos.eu
 git pull origin main
 ```
 
 ## 3. Configurar senhas
 
 ```bash
-cd /opt/ericsantos.eu/infra
+cd /var/www/ericsantos.eu/infra
 cp .env.example .env
 nano .env
 ```
@@ -180,7 +180,7 @@ As confs ficam em `../nginx/banco.ericsantos.eu.conf` e
 subdomínios — veja o README da raiz do repo):
 
 ```bash
-sudo cp /opt/ericsantos.eu/nginx/banco.ericsantos.eu.conf /etc/nginx/sites-available/
+sudo cp /var/www/ericsantos.eu/nginx/banco.ericsantos.eu.conf /etc/nginx/sites-available/
 sudo ln -s /etc/nginx/sites-available/banco.ericsantos.eu.conf /etc/nginx/sites-enabled/
 sudo certbot --nginx -d banco.ericsantos.eu
 sudo nginx -t && sudo systemctl reload nginx

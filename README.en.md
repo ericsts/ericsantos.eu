@@ -59,6 +59,6 @@ ericsantos.eu/
 
 ## Deploy
 
-A push to the `main` branch triggers GitHub Actions, which runs `git pull` on the repo checkout at `/opt/ericsantos.eu/` on the server (the same checkout the shared infra stack is deployed from — see `infra/README.md`).
+A push to the `main` branch triggers GitHub Actions, which runs `git pull` on the repo checkout at `/var/www/ericsantos.eu/` on the server (the same checkout the shared infra stack is deployed from — see `infra/README.md`).
 
 The nginx configs in `nginx/` are applied manually on the server when changed (which is rare).
