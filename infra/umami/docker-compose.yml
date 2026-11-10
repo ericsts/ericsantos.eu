@@ -1,0 +1,27 @@
+# Umami (analytics sem cookies) para jsinternacional.com → stats.jsinternacional.com
+# Usa o Postgres compartilhado (infra_postgres, database/role "umami").
+# Segredos em ./.env (não versionado): UMAMI_DB_PASSWORD, UMAMI_APP_SECRET.
+services:
+  umami:
+    image: ghcr.io/umami-software/umami:3.4.1
+    container_name: umami
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:?defina UMAMI_DB_PASSWORD no .env}@infra_postgres:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET:?defina UMAMI_APP_SECRET no .env}
+      DISABLE_TELEMETRY: "1"
+    ports:
+      - "127.0.0.1:3010:3000"   # só localhost — nginx do host faz o proxy
+    mem_limit: 384m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/heartbeat || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - infra_shared
+
+networks:
+  infra_shared:
+    external: true
